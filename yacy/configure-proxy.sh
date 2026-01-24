@@ -10,6 +10,8 @@ PROXY_PORT="${YACY_PROXY_PORT:-9050}"
 BOOTSTRAP_PEER="${BOOTSTRAP_PEER:-}"
 NETWORK_NAME="${NETWORK_NAME:-tor}"
 PEER_PORT="${PEER_PORT:-8090}"
+ADMIN_USER="${YACY_ADMIN_USER:-admin}"
+ADMIN_PASSWORD="${YACY_ADMIN_PASSWORD:-}"
 
 set_config() {
     local key="$1"
@@ -75,6 +77,19 @@ configure_yacy() {
     set_config "network.unit.dht" "true"
     set_config "network.unit.dhtredundancy.junior" "1"
     set_config "network.unit.dhtredundancy.senior" "3"
+
+    # Admin-Zugangsdaten setzen
+    if [ -n "$ADMIN_PASSWORD" ]; then
+        echo "Konfiguriere Admin-Zugang: $ADMIN_USER"
+        # YaCy erwartet Base64-kodierten MD5-Hash von "user:password"
+        ADMIN_HASH=$(echo -n "${ADMIN_USER}:${ADMIN_PASSWORD}" | md5sum | awk '{print $1}' | xxd -r -p | base64)
+        set_config "adminAccountUserName" "$ADMIN_USER"
+        set_config "adminAccountBase64MD5" "$ADMIN_HASH"
+        set_config "adminAccountForLocalhost" "false"
+        echo "Admin-Zugang konfiguriert."
+    else
+        echo "WARNUNG: Kein Admin-Passwort gesetzt. Admin-Interface ist ohne Authentifizierung erreichbar!"
+    fi
 
     echo "YaCy Peering-Konfiguration abgeschlossen."
 }
