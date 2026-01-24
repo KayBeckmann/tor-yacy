@@ -11,6 +11,9 @@ network.unit.description = YaCy Tor Hidden Service Network
 # "any" is required for .onion addresses (disables IP format validation)
 network.unit.domain = any
 
+# disable domain check to allow .onion crawling
+network.unit.domain.nocheck = true
+
 # maximum search time for remote queries (milliseconds)
 network.unit.remotesearch.maxtime = 10000
 

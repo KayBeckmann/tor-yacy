@@ -48,6 +48,7 @@ set_config "network.unit.definition" "defaults/yacy.network.tor.unit"
 set_config "network.unit.name" "$NETWORK_NAME"
 set_config "network.unit.description" "YaCy Tor Hidden Service Network"
 set_config "network.unit.domain" "any"
+set_config "network.unit.domain.nocheck" "true"
 
 # Alte freeworld-Seedlisten entfernen
 sed -i '/^network\.unit\.bootstrap\.seedlist[0-9]/d' "$YACY_CONF"
@@ -64,7 +65,7 @@ fi
 NETWORK_UNIT_FILE="/opt/yacy_search_server/defaults/yacy.network.tor.unit"
 if [ -n "$BOOTSTRAP_PEER" ]; then
     echo "Konfiguriere Bootstrap-Peer: $BOOTSTRAP_PEER"
-    SEED_URL="http://${BOOTSTRAP_PEER}:${PEER_PORT}/yacy/seedlist.json"
+    SEED_URL="http://${BOOTSTRAP_PEER}:${PEER_PORT}/yacy/seedlist.html"
     # Seedlist in der Netzwerk-Definitionsdatei setzen (YaCy laedt Seedlisten von dort)
     if grep -q "^network.unit.bootstrap.seedlist0" "$NETWORK_UNIT_FILE" 2>/dev/null; then
         sed -i "s|^network.unit.bootstrap.seedlist0.*|network.unit.bootstrap.seedlist0 = ${SEED_URL}|" "$NETWORK_UNIT_FILE"
