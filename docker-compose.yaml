@@ -9,8 +9,7 @@ services:
       - YACY_HOST=yacy
       - YACY_PORT=8090
       - ONION_PORT=${ONION_PORT:-80}
-    depends_on:
-      - yacy
+      - PEER_PORT=${PEER_PORT:-8090}
     networks:
       - tor-net
 
@@ -19,9 +18,15 @@ services:
     restart: unless-stopped
     volumes:
       - ./yacy-data:/opt/yacy_search_server/DATA
+      - ./hidden_service:/hidden_service:ro
     environment:
       - YACY_PROXY_HOST=tor
       - YACY_PROXY_PORT=9050
+      - BOOTSTRAP_PEER=${BOOTSTRAP_PEER:-}
+      - NETWORK_NAME=${NETWORK_NAME:-tor}
+      - PEER_PORT=${PEER_PORT:-8090}
+    depends_on:
+      - tor
     networks:
       - tor-net
     ports:

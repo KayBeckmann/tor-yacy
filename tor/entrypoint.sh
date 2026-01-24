@@ -5,6 +5,7 @@ VANITY_PREFIX="${VANITY_PREFIX:-}"
 YACY_HOST="${YACY_HOST:-yacy}"
 YACY_PORT="${YACY_PORT:-8090}"
 ONION_PORT="${ONION_PORT:-80}"
+PEER_PORT="${PEER_PORT:-8090}"
 HIDDEN_SERVICE_DIR="/var/lib/tor/hidden_service"
 
 # Vanity-Adresse generieren falls Prefix gesetzt und keine Keys vorhanden
@@ -49,13 +50,21 @@ SocksPolicy accept *
 # Hidden Service Konfiguration
 HiddenServiceDir $HIDDEN_SERVICE_DIR
 HiddenServicePort $ONION_PORT $YACY_HOST:$YACY_PORT
+EOF
+
+# Peering-Port nur hinzufuegen wenn verschieden vom Onion-Port
+if [ "$PEER_PORT" != "$ONION_PORT" ]; then
+    echo "HiddenServicePort $PEER_PORT $YACY_HOST:$YACY_PORT" >> /etc/tor/torrc
+fi
+
+cat >> /etc/tor/torrc << EOF
 
 # Logging
 Log notice stdout
 EOF
 
 echo "Starte Tor..."
-echo "Hidden Service wird auf Port $ONION_PORT bereitgestellt -> $YACY_HOST:$YACY_PORT"
+echo "Hidden Service: Port $ONION_PORT (Web) + Port $PEER_PORT (Peering) -> $YACY_HOST:$YACY_PORT"
 
 # Warte kurz und zeige dann die .onion-Adresse
 (sleep 10 && if [ -f "$HIDDEN_SERVICE_DIR/hostname" ]; then
