@@ -1,0 +1,32 @@
+services:
+  tor:
+    build: ./tor
+    restart: unless-stopped
+    volumes:
+      - ./hidden_service:/var/lib/tor/hidden_service
+    environment:
+      - VANITY_PREFIX=${VANITY_PREFIX:-}
+      - YACY_HOST=yacy
+      - YACY_PORT=8090
+      - ONION_PORT=${ONION_PORT:-80}
+    depends_on:
+      - yacy
+    networks:
+      - tor-net
+
+  yacy:
+    build: ./yacy
+    restart: unless-stopped
+    volumes:
+      - ./yacy-data:/opt/yacy_search_server/DATA
+    environment:
+      - YACY_PROXY_HOST=tor
+      - YACY_PROXY_PORT=9050
+    networks:
+      - tor-net
+    ports:
+      - "${YACY_LOCAL_PORT:-8090}:8090"
+
+networks:
+  tor-net:
+    driver: bridge

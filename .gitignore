@@ -1,0 +1,8 @@
+# Umgebungsvariablen
+.env
+
+# Tor Hidden Service Keys (GEHEIM!)
+hidden_service/
+
+# YaCy Daten
+yacy-data/
