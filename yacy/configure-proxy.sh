@@ -24,78 +24,64 @@ set_config() {
     fi
 }
 
-# Warte bis yacy.conf existiert und konfiguriere alles
-configure_yacy() {
-    local attempts=0
-    while [ ! -f "$YACY_CONF" ] && [ $attempts -lt 60 ]; do
-        sleep 2
-        attempts=$((attempts + 1))
-    done
+# SETTINGS-Verzeichnis und yacy.conf erstellen falls nicht vorhanden
+mkdir -p "$SETTINGS_DIR"
+if [ ! -f "$YACY_CONF" ]; then
+    echo "Erstelle initiale yacy.conf..."
+    touch "$YACY_CONF"
+fi
 
-    if [ ! -f "$YACY_CONF" ]; then
-        echo "WARNUNG: yacy.conf nicht gefunden nach 120s"
-        return
-    fi
+# Proxy-Einstellungen fuer Tor
+if [ -n "$PROXY_HOST" ]; then
+    echo "Konfiguriere Tor-Proxy: $PROXY_HOST:$PROXY_PORT"
+    set_config "remoteProxyUse" "true"
+    set_config "remoteProxyHost" "$PROXY_HOST"
+    set_config "remoteProxyPort" "$PROXY_PORT"
+    set_config "remoteProxyUse4SSL" "true"
+    set_config "remoteProxyNoProxy" ""
+    echo "Tor-Proxy konfiguriert."
+fi
 
-    # Proxy-Einstellungen fuer Tor
-    if [ -n "$PROXY_HOST" ]; then
-        echo "Konfiguriere Tor-Proxy: $PROXY_HOST:$PROXY_PORT"
-        set_config "remoteProxyUse" "true"
-        set_config "remoteProxyHost" "$PROXY_HOST"
-        set_config "remoteProxyPort" "$PROXY_PORT"
-        set_config "remoteProxyUse4SSL" "true"
-        set_config "remoteProxyNoProxy" ""
-        echo "Tor-Proxy konfiguriert."
-    fi
+# Netzwerk-Name setzen (eigenes Tor-Netzwerk)
+echo "Setze Netzwerk-Name: $NETWORK_NAME"
+set_config "network.unit.name" "$NETWORK_NAME"
 
-    # Netzwerk-Name setzen (eigenes Tor-Netzwerk)
-    echo "Setze Netzwerk-Name: $NETWORK_NAME"
-    set_config "network.unit.name" "$NETWORK_NAME"
+# Eigene .onion-Adresse als Peer-Adresse setzen
+if [ -f "/hidden_service/hostname" ]; then
+    ONION_ADDR=$(cat /hidden_service/hostname | tr -d '[:space:]')
+    echo "Eigene Onion-Adresse: $ONION_ADDR"
+    set_config "serverhost" "$ONION_ADDR"
+    set_config "serverport" "$PEER_PORT"
+fi
 
-    # Eigene .onion-Adresse als Peer-Adresse setzen
-    ONION_FILE="/opt/yacy_search_server/DATA/SETTINGS/onion_address"
-    if [ -f "/hidden_service/hostname" ]; then
-        ONION_ADDR=$(cat /hidden_service/hostname | tr -d '[:space:]')
-        echo "Eigene Onion-Adresse: $ONION_ADDR"
-        # YaCy mitteilen unter welcher Adresse dieser Knoten erreichbar ist
-        set_config "serverhost" "$ONION_ADDR"
-        set_config "serverport" "$PEER_PORT"
-        echo "$ONION_ADDR" > "$ONION_FILE"
-    fi
+# Bootstrap-Peer konfigurieren
+if [ -n "$BOOTSTRAP_PEER" ]; then
+    echo "Konfiguriere Bootstrap-Peer: $BOOTSTRAP_PEER"
+    SEED_URL="http://${BOOTSTRAP_PEER}:${PEER_PORT}/yacy/seedlist.json"
+    set_config "network.unit.bootstrap.seedlist0" "$SEED_URL"
+    set_config "network.unit.bootstrap.seedlistcount" "1"
+    echo "Bootstrap-Peer konfiguriert: $SEED_URL"
+fi
 
-    # Bootstrap-Peer konfigurieren
-    if [ -n "$BOOTSTRAP_PEER" ]; then
-        echo "Konfiguriere Bootstrap-Peer: $BOOTSTRAP_PEER"
-        # Seed-Liste vom Bootstrap-Peer laden
-        SEED_URL="http://${BOOTSTRAP_PEER}:${PEER_PORT}/yacy/seedlist.json"
-        set_config "network.unit.bootstrap.seedlist0" "$SEED_URL"
-        set_config "network.unit.bootstrap.seedlistcount" "1"
-        echo "Bootstrap-Peer konfiguriert: $SEED_URL"
-    fi
+# P2P-Modus aktivieren
+set_config "network.unit.dht" "true"
+set_config "network.unit.dhtredundancy.junior" "1"
+set_config "network.unit.dhtredundancy.senior" "3"
 
-    # P2P-Modus aktivieren
-    set_config "network.unit.dht" "true"
-    set_config "network.unit.dhtredundancy.junior" "1"
-    set_config "network.unit.dhtredundancy.senior" "3"
+# Admin-Zugangsdaten setzen
+if [ -n "$ADMIN_PASSWORD" ]; then
+    echo "Konfiguriere Admin-Zugang: $ADMIN_USER"
+    # YaCy erwartet Base64-kodierten MD5-Hash von "user:password"
+    ADMIN_HASH=$(echo -n "${ADMIN_USER}:${ADMIN_PASSWORD}" | md5sum | awk '{print $1}' | xxd -r -p | base64)
+    set_config "adminAccountUserName" "$ADMIN_USER"
+    set_config "adminAccountBase64MD5" "$ADMIN_HASH"
+    set_config "adminAccountForLocalhost" "false"
+    echo "Admin-Zugang konfiguriert."
+else
+    echo "WARNUNG: Kein Admin-Passwort gesetzt. Admin-Interface ist ohne Authentifizierung erreichbar!"
+fi
 
-    # Admin-Zugangsdaten setzen
-    if [ -n "$ADMIN_PASSWORD" ]; then
-        echo "Konfiguriere Admin-Zugang: $ADMIN_USER"
-        # YaCy erwartet Base64-kodierten MD5-Hash von "user:password"
-        ADMIN_HASH=$(echo -n "${ADMIN_USER}:${ADMIN_PASSWORD}" | md5sum | awk '{print $1}' | xxd -r -p | base64)
-        set_config "adminAccountUserName" "$ADMIN_USER"
-        set_config "adminAccountBase64MD5" "$ADMIN_HASH"
-        set_config "adminAccountForLocalhost" "false"
-        echo "Admin-Zugang konfiguriert."
-    else
-        echo "WARNUNG: Kein Admin-Passwort gesetzt. Admin-Interface ist ohne Authentifizierung erreichbar!"
-    fi
-
-    echo "YaCy Peering-Konfiguration abgeschlossen."
-}
-
-# Konfiguration im Hintergrund ausfuehren (YaCy muss erst starten)
-configure_yacy &
+echo "YaCy-Konfiguration abgeschlossen. Starte YaCy..."
 
 # YaCy starten
 cd /opt/yacy_search_server
