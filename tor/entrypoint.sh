@@ -1,0 +1,67 @@
+#!/bin/bash
+set -e
+
+VANITY_PREFIX="${VANITY_PREFIX:-}"
+YACY_HOST="${YACY_HOST:-yacy}"
+YACY_PORT="${YACY_PORT:-8090}"
+ONION_PORT="${ONION_PORT:-80}"
+HIDDEN_SERVICE_DIR="/var/lib/tor/hidden_service"
+
+# Vanity-Adresse generieren falls Prefix gesetzt und keine Keys vorhanden
+if [ -n "$VANITY_PREFIX" ] && [ ! -f "$HIDDEN_SERVICE_DIR/hs_ed25519_secret_key" ]; then
+    echo "Generiere Vanity-Adresse mit Prefix: $VANITY_PREFIX"
+    echo "Dies kann je nach Prefix-Laenge lange dauern..."
+
+    WORK_DIR=$(mktemp -d)
+    cd "$WORK_DIR"
+
+    mkp224o -n 1 -d "$WORK_DIR/results" "$VANITY_PREFIX"
+
+    # Ergebnis in Hidden Service Verzeichnis kopieren
+    RESULT_DIR=$(find "$WORK_DIR/results" -mindepth 1 -maxdepth 1 -type d | head -1)
+
+    if [ -n "$RESULT_DIR" ]; then
+        mkdir -p "$HIDDEN_SERVICE_DIR"
+        cp "$RESULT_DIR/hostname" "$HIDDEN_SERVICE_DIR/"
+        cp "$RESULT_DIR/hs_ed25519_secret_key" "$HIDDEN_SERVICE_DIR/"
+        cp "$RESULT_DIR/hs_ed25519_public_key" "$HIDDEN_SERVICE_DIR/"
+        echo "Vanity-Adresse generiert: $(cat $HIDDEN_SERVICE_DIR/hostname)"
+    else
+        echo "FEHLER: Keine Adresse generiert!"
+        exit 1
+    fi
+
+    rm -rf "$WORK_DIR"
+fi
+
+# Berechtigungen setzen
+if [ -d "$HIDDEN_SERVICE_DIR" ]; then
+    chown -R debian-tor:debian-tor "$HIDDEN_SERVICE_DIR"
+    chmod 700 "$HIDDEN_SERVICE_DIR"
+fi
+
+# Tor-Konfiguration erstellen
+cat > /etc/tor/torrc << EOF
+# SOCKS-Proxy fuer YaCy (erlaubt Zugriff aus dem Docker-Netzwerk)
+SocksPort 0.0.0.0:9050
+SocksPolicy accept *
+
+# Hidden Service Konfiguration
+HiddenServiceDir $HIDDEN_SERVICE_DIR
+HiddenServicePort $ONION_PORT $YACY_HOST:$YACY_PORT
+
+# Logging
+Log notice stdout
+EOF
+
+echo "Starte Tor..."
+echo "Hidden Service wird auf Port $ONION_PORT bereitgestellt -> $YACY_HOST:$YACY_PORT"
+
+# Warte kurz und zeige dann die .onion-Adresse
+(sleep 10 && if [ -f "$HIDDEN_SERVICE_DIR/hostname" ]; then
+    echo "==================================="
+    echo "Onion-Adresse: $(cat $HIDDEN_SERVICE_DIR/hostname)"
+    echo "==================================="
+fi) &
+
+exec tor -f /etc/tor/torrc
