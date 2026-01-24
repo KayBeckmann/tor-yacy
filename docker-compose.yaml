@@ -21,7 +21,7 @@ services:
       - ./hidden_service:/hidden_service:ro
     environment:
       - YACY_PROXY_HOST=tor
-      - YACY_PROXY_PORT=9050
+      - YACY_PROXY_PORT=8118
       - BOOTSTRAP_PEER=${BOOTSTRAP_PEER:-}
       - NETWORK_NAME=${NETWORK_NAME:-tor}
       - PEER_PORT=${PEER_PORT:-8090}

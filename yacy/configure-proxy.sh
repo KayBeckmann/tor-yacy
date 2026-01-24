@@ -42,24 +42,35 @@ if [ -n "$PROXY_HOST" ]; then
     echo "Tor-Proxy konfiguriert."
 fi
 
-# Netzwerk-Name setzen (eigenes Tor-Netzwerk)
-echo "Setze Netzwerk-Name: $NETWORK_NAME"
+# Netzwerk-Definition setzen (eigene Tor-Netzwerkdatei statt freeworld)
+echo "Setze Netzwerk: $NETWORK_NAME"
+set_config "network.unit.definition" "defaults/yacy.network.tor.unit"
 set_config "network.unit.name" "$NETWORK_NAME"
+set_config "network.unit.description" "YaCy Tor Hidden Service Network"
+set_config "network.unit.domain" "any"
+
+# Alte freeworld-Seedlisten entfernen
+sed -i '/^network\.unit\.bootstrap\.seedlist[0-9]/d' "$YACY_CONF"
 
 # Eigene .onion-Adresse als Peer-Adresse setzen
 if [ -f "/hidden_service/hostname" ]; then
     ONION_ADDR=$(cat /hidden_service/hostname | tr -d '[:space:]')
     echo "Eigene Onion-Adresse: $ONION_ADDR"
-    set_config "serverhost" "$ONION_ADDR"
+    set_config "staticIP" "$ONION_ADDR"
     set_config "serverport" "$PEER_PORT"
 fi
 
-# Bootstrap-Peer konfigurieren
+# Bootstrap-Peer in Netzwerk-Definitionsdatei schreiben
+NETWORK_UNIT_FILE="/opt/yacy_search_server/defaults/yacy.network.tor.unit"
 if [ -n "$BOOTSTRAP_PEER" ]; then
     echo "Konfiguriere Bootstrap-Peer: $BOOTSTRAP_PEER"
     SEED_URL="http://${BOOTSTRAP_PEER}:${PEER_PORT}/yacy/seedlist.json"
-    set_config "network.unit.bootstrap.seedlist0" "$SEED_URL"
-    set_config "network.unit.bootstrap.seedlistcount" "1"
+    # Seedlist in der Netzwerk-Definitionsdatei setzen (YaCy laedt Seedlisten von dort)
+    if grep -q "^network.unit.bootstrap.seedlist0" "$NETWORK_UNIT_FILE" 2>/dev/null; then
+        sed -i "s|^network.unit.bootstrap.seedlist0.*|network.unit.bootstrap.seedlist0 = ${SEED_URL}|" "$NETWORK_UNIT_FILE"
+    else
+        echo "network.unit.bootstrap.seedlist0 = ${SEED_URL}" >> "$NETWORK_UNIT_FILE"
+    fi
     echo "Bootstrap-Peer konfiguriert: $SEED_URL"
 fi
 

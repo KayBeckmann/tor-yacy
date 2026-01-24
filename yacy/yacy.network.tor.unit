@@ -1,0 +1,44 @@
+# Network definition file for the YaCy Tor network
+# This defines a private YaCy network operating over Tor hidden services
+
+# define the name of the network
+network.unit.name = tor
+
+# the visible name of the network
+network.unit.description = YaCy Tor Hidden Service Network
+
+# definition of the content domain
+# "any" is required for .onion addresses (disables IP format validation)
+network.unit.domain = any
+
+# maximum search time for remote queries (milliseconds)
+network.unit.remotesearch.maxtime = 10000
+
+# maximum number of results per remote query
+network.unit.remotesearch.maxcount = 10
+
+# flag to switch on dht transmission
+network.unit.dht = true
+
+# the number of redundant target peers
+network.unit.dhtredundancy.junior = 1
+network.unit.dhtredundancy.senior = 3
+
+# the vertical partition of the dht
+network.unit.dht.partitionExponent = 4
+
+# switch to enable verification of search results
+network.unit.inspection.searchverify = true
+
+# speed of remote crawl de-queueing (milliseconds between requests)
+network.unit.remotecrawl.speed = 600
+
+# protocol control
+network.unit.protocol.control = uncontrolled
+
+# white/blacklists
+network.unit.access.whitelist = 10\..*,127\..*,172\.(1[6-9]|2[0-9]|3[0-1])\..*,169\.254\..*,192\.168\..*,localhost
+network.unit.access.blacklist =
+
+# no greedy learning in tor network
+greedylearning.enabled = false

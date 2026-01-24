@@ -42,9 +42,8 @@ chmod 700 "$HIDDEN_SERVICE_DIR"
 
 # Tor-Konfiguration erstellen
 cat > /etc/tor/torrc << EOF
-# SOCKS-Proxy fuer YaCy (erlaubt Zugriff aus dem Docker-Netzwerk)
-SocksPort 0.0.0.0:9050
-SocksPolicy accept *
+# SOCKS-Proxy (intern fuer Privoxy)
+SocksPort 127.0.0.1:9050
 
 # Hidden Service Konfiguration
 HiddenServiceDir $HIDDEN_SERVICE_DIR
@@ -61,6 +60,19 @@ cat >> /etc/tor/torrc << EOF
 # Logging
 Log notice stdout
 EOF
+
+# Privoxy als HTTP-zu-SOCKS5-Bridge konfigurieren
+cat > /etc/privoxy/config << EOF
+listen-address  0.0.0.0:8118
+forward-socks5  /  127.0.0.1:9050  .
+toggle  0
+enable-remote-toggle  0
+enable-edit-actions  0
+enable-remote-http-toggle  0
+EOF
+
+echo "Starte Privoxy (HTTP-Proxy auf Port 8118 -> Tor SOCKS5)..."
+privoxy /etc/privoxy/config
 
 echo "Starte Tor..."
 echo "Hidden Service: Port $ONION_PORT (Web) + Port $PEER_PORT (Peering) -> $YACY_HOST:$YACY_PORT"
