@@ -71,10 +71,12 @@ set_config "network.unit.dhtredundancy.senior" "3"
 # Admin-Zugangsdaten setzen
 if [ -n "$ADMIN_PASSWORD" ]; then
     echo "Konfiguriere Admin-Zugang: $ADMIN_USER"
-    # YaCy erwartet Base64-kodierten MD5-Hash von "user:password"
-    ADMIN_HASH=$(echo -n "${ADMIN_USER}:${ADMIN_PASSWORD}" | md5sum | awk '{print $1}' | xxd -r -p | base64)
+    # YaCy verwendet HTTP Digest Auth: MD5(username:realm:password)
+    ADMIN_REALM="The YaCy access is limited to administrators. If you don't know the password, you can change it using <yacy-home>/bin/passwd.sh <new-password>"
+    ADMIN_HASH="MD5:$(echo -n "${ADMIN_USER}:${ADMIN_REALM}:${ADMIN_PASSWORD}" | md5sum | awk '{print $1}')"
     set_config "adminAccountUserName" "$ADMIN_USER"
     set_config "adminAccountBase64MD5" "$ADMIN_HASH"
+    set_config "adminRealm" "$ADMIN_REALM"
     set_config "adminAccountForLocalhost" "false"
     echo "Admin-Zugang konfiguriert."
 else

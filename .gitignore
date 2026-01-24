@@ -6,3 +6,10 @@ hidden_service/
 
 # YaCy Daten
 yacy-data/
+
+# Docker
+docker-compose.override.yml
+
+# OS-Dateien
+.DS_Store
+Thumbs.db
