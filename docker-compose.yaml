@@ -25,6 +25,8 @@ services:
       - BOOTSTRAP_PEER=${BOOTSTRAP_PEER:-}
       - NETWORK_NAME=${NETWORK_NAME:-tor}
       - PEER_PORT=${PEER_PORT:-8090}
+      - YACY_ADMIN_USER=${YACY_ADMIN_USER:-admin}
+      - YACY_ADMIN_PASSWORD=${YACY_ADMIN_PASSWORD:-}
     depends_on:
       - tor
     networks:

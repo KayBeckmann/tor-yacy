@@ -35,11 +35,10 @@ if [ -n "$VANITY_PREFIX" ] && [ ! -f "$HIDDEN_SERVICE_DIR/hs_ed25519_secret_key"
     rm -rf "$WORK_DIR"
 fi
 
-# Berechtigungen setzen
-if [ -d "$HIDDEN_SERVICE_DIR" ]; then
-    chown -R debian-tor:debian-tor "$HIDDEN_SERVICE_DIR"
-    chmod 700 "$HIDDEN_SERVICE_DIR"
-fi
+# Verzeichnis erstellen falls nicht vorhanden und Berechtigungen setzen
+mkdir -p "$HIDDEN_SERVICE_DIR"
+chown -R debian-tor:debian-tor "$HIDDEN_SERVICE_DIR"
+chmod 700 "$HIDDEN_SERVICE_DIR"
 
 # Tor-Konfiguration erstellen
 cat > /etc/tor/torrc << EOF
@@ -73,4 +72,4 @@ echo "Hidden Service: Port $ONION_PORT (Web) + Port $PEER_PORT (Peering) -> $YAC
     echo "==================================="
 fi) &
 
-exec tor -f /etc/tor/torrc
+exec runuser -u debian-tor -- tor -f /etc/tor/torrc
