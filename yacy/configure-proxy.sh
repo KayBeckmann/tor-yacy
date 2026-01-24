@@ -61,17 +61,20 @@ if [ -f "/hidden_service/hostname" ]; then
     set_config "serverport" "$PEER_PORT"
 fi
 
-# Bootstrap-Peer in Netzwerk-Definitionsdatei schreiben
+# Bootstrap-Peer konfigurieren
 NETWORK_UNIT_FILE="/opt/yacy_search_server/defaults/yacy.network.tor.unit"
 if [ -n "$BOOTSTRAP_PEER" ]; then
     echo "Konfiguriere Bootstrap-Peer: $BOOTSTRAP_PEER"
     SEED_URL="http://${BOOTSTRAP_PEER}:${PEER_PORT}/yacy/seedlist.html"
-    # Seedlist in der Netzwerk-Definitionsdatei setzen (YaCy laedt Seedlisten von dort)
+    # Seedlist in der Netzwerk-Definitionsdatei setzen
     if grep -q "^network.unit.bootstrap.seedlist0" "$NETWORK_UNIT_FILE" 2>/dev/null; then
         sed -i "s|^network.unit.bootstrap.seedlist0.*|network.unit.bootstrap.seedlist0 = ${SEED_URL}|" "$NETWORK_UNIT_FILE"
     else
         echo "network.unit.bootstrap.seedlist0 = ${SEED_URL}" >> "$NETWORK_UNIT_FILE"
     fi
+    # Seedlist auch direkt in yacy.conf setzen (YaCy ueberschreibt network.unit.definition
+    # zur Laufzeit, sodass die Network-Unit-Datei nicht mehr gelesen wird)
+    set_config "network.unit.bootstrap.seedlist0" "$SEED_URL"
     echo "Bootstrap-Peer konfiguriert: $SEED_URL"
 fi
 
@@ -79,6 +82,9 @@ fi
 set_config "network.unit.dht" "true"
 set_config "network.unit.dhtredundancy.junior" "1"
 set_config "network.unit.dhtredundancy.senior" "3"
+
+# Bootstrap-Timeout fuer Tor erhoehen (Standard 20s ist zu kurz)
+set_config "bootstrapLoadTimeout" "60000"
 
 # Admin-Zugangsdaten setzen
 if [ -n "$ADMIN_PASSWORD" ]; then
