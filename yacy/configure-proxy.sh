@@ -97,6 +97,7 @@ fi
 
 echo "YaCy-Konfiguration abgeschlossen. Starte YaCy..."
 
+
 # YaCy starten
 cd /opt/yacy_search_server
 exec sh /opt/yacy_search_server/startYACY.sh -f
