@@ -10,6 +10,9 @@ network.unit.description = YaCy Tor Hidden Service Network
 # definition of the content domain
 # "any" is required for .onion addresses (disables IP format validation)
 network.unit.domain = any
+# WICHTIG: network.domain (ohne unit) wird von Switchboard.isAllIPMode() geprueft
+# und muss "any" sein, damit .onion-Adressen als gueltige Peer-IPs akzeptiert werden
+network.domain = any
 
 # disable domain check to allow .onion crawling
 network.unit.domain.nocheck = true
