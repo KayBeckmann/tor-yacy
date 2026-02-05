@@ -50,6 +50,11 @@ set_config "network.unit.description" "YaCy Tor Hidden Service Network"
 set_config "network.unit.domain" "any"
 set_config "network.unit.domain.nocheck" "true"
 
+# KRITISCH: network.domain (ohne unit) muss auch gesetzt werden!
+# isAllIPMode() in Switchboard.java prueft diese Einstellung
+# und akzeptiert alle IPs (inkl. .onion) nur wenn domain="any"
+set_config "network.domain" "any"
+
 # Alte freeworld-Seedlisten entfernen
 sed -i '/^network\.unit\.bootstrap\.seedlist[0-9]/d' "$YACY_CONF"
 
