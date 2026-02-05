@@ -40,8 +40,16 @@ network.unit.remotecrawl.speed = 600
 network.unit.protocol.control = uncontrolled
 
 # white/blacklists
-network.unit.access.whitelist = 10\..*,127\..*,172\.(1[6-9]|2[0-9]|3[0-1])\..*,169\.254\..*,192\.168\..*,localhost
+# Empty whitelist = allow all addresses (required for .onion addresses)
+network.unit.access.whitelist =
 network.unit.access.blacklist =
 
-# no greedy learning in tor network
-greedylearning.enabled = false
+# Enable greedy learning for better peer discovery in small networks
+greedylearning.enabled = true
+greedylearning.isActive = true
+greedylearning.limit.doccount = 1000
+
+# Accept all peer types including virgin/junior (critical for Tor network)
+cluster.mode = publiccluster
+cluster.peers.yacydomain =
+network.acceptRemoteControl = false
