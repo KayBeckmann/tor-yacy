@@ -86,6 +86,33 @@ set_config "network.unit.dhtredundancy.senior" "3"
 # Bootstrap-Timeout fuer Tor erhoehen (Standard 20s ist zu kurz)
 set_config "bootstrapLoadTimeout" "60000"
 
+# Peer-Akzeptanz: Alle Peer-Typen erlauben (virgin, junior, senior, principal)
+# Kritisch fuer Tor-Netzwerke, wo Erreichbarkeitstests nicht funktionieren
+set_config "cluster.mode" "publiccluster"
+set_config "seedUploadMethod" "none"
+
+# Greedy Learning aktivieren fuer bessere Peer-Entdeckung
+set_config "greedylearning.enabled" "true"
+set_config "greedylearning.isActive" "true"
+set_config "greedylearning.limit.doccount" "1000"
+
+# Remote Search und Crawling erlauben
+set_config "remotesearch.result.store" "true"
+set_config "remotesearch.result.store.doSearch" "true"
+set_config "crawlResponse" "true"
+
+# Index-Austausch aktivieren
+set_config "allowReceiveIndex" "true"
+set_config "allowTransmitIndex" "true"
+
+# DHT Transfer aktivieren
+set_config "DHT.sendChunkLimit" "100"
+set_config "DHT.receiveChunkLimit" "100"
+
+# Peers nicht ablehnen basierend auf IP-Validierung
+set_config "network.unit.access.whitelist" ""
+set_config "network.unit.access.blacklist" ""
+
 # Admin-Zugangsdaten setzen
 if [ -n "$ADMIN_PASSWORD" ]; then
     echo "Konfiguriere Admin-Zugang: $ADMIN_USER"
