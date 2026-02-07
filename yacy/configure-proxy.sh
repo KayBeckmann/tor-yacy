@@ -59,11 +59,31 @@ set_config "network.domain" "any"
 sed -i '/^network\.unit\.bootstrap\.seedlist[0-9]/d' "$YACY_CONF"
 
 # Eigene .onion-Adresse als Peer-Adresse setzen
+# Warte auf die hostname-Datei (Tor braucht etwas Zeit zum Starten)
+echo "Warte auf Tor Hidden Service hostname..."
+WAIT_COUNT=0
+MAX_WAIT=60
+while [ ! -f "/hidden_service/hostname" ] && [ $WAIT_COUNT -lt $MAX_WAIT ]; do
+    sleep 1
+    WAIT_COUNT=$((WAIT_COUNT + 1))
+    if [ $((WAIT_COUNT % 10)) -eq 0 ]; then
+        echo "Warte auf /hidden_service/hostname... ($WAIT_COUNT/$MAX_WAIT)"
+    fi
+done
+
 if [ -f "/hidden_service/hostname" ]; then
     ONION_ADDR=$(cat /hidden_service/hostname | tr -d '[:space:]')
     echo "Eigene Onion-Adresse: $ONION_ADDR"
+    # Setze alle relevanten IP-Konfigurationen
     set_config "staticIP" "$ONION_ADDR"
+    set_config "peerIP" "$ONION_ADDR"
     set_config "serverport" "$PEER_PORT"
+    set_config "port" "$PEER_PORT"
+    # PublicPeer-Einstellungen fuer Seed-Publishing
+    set_config "peerName" "TorPeer-$(echo $ONION_ADDR | cut -c1-8)"
+else
+    echo "WARNUNG: /hidden_service/hostname nicht gefunden nach ${MAX_WAIT}s!"
+    echo "Die Peer-Discovery wird ohne eigene .onion-Adresse nicht funktionieren."
 fi
 
 # Bootstrap-Peer konfigurieren
