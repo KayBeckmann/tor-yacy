@@ -2,6 +2,12 @@ FROM yacy/yacy_search_server:latest
 
 USER root
 
+# Seed.java patchen: .onion Adressen immer als gueltige IPs akzeptieren
+# Die isProperIP() Methode wird um einen fruehen Return fuer .onion erweitert,
+# sodass .onion-Adressen IMMER akzeptiert werden, unabhaengig von isAllIPMode()
+RUN sed -i 's/if (ipString.length() < 3) return false;/if (ipString.length() < 3) return false; if (ipString.endsWith(".onion")) return true;/g' \
+        /opt/yacy_search_server/source/net/yacy/peers/Seed.java
+
 # PeerActions.java patchen: virgin/junior Peers nicht ablehnen
 # In Tor-Netzwerken funktioniert der Erreichbarkeitstest nicht,
 # daher muessen alle Peers akzeptiert werden unabhaengig vom Typ.
@@ -17,11 +23,13 @@ RUN sed -i '/peerType.equals(Seed.PEERTYPE_VIRGIN)/,/return false;/{/return fals
         /opt/yacy_search_server/source/net/yacy/peers/PeerActions.java && \
     # Methode 3: Ersetze NOT QUALIFIED Check durch akzeptiere alle
     sed -i 's/!peerType\.equals(Seed\.PEERTYPE_SENIOR) && !peerType\.equals(Seed\.PEERTYPE_PRINCIPAL)/false/g' \
-        /opt/yacy_search_server/source/net/yacy/peers/PeerActions.java && \
-    # Neucompilieren
-    cd /opt/yacy_search_server && \
+        /opt/yacy_search_server/source/net/yacy/peers/PeerActions.java
+
+# Beide gepatchten Dateien neu kompilieren
+RUN cd /opt/yacy_search_server && \
     javac -cp "build/classes/java/main:lib/*" \
         -d build/classes/java/main \
+        source/net/yacy/peers/Seed.java \
         source/net/yacy/peers/PeerActions.java
 
 COPY yacy.network.tor.unit /opt/yacy_search_server/defaults/yacy.network.tor.unit
